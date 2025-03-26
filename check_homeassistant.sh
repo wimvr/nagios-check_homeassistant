@@ -83,33 +83,33 @@ fi
 
 if [ "$(echo $PAGE | xmllint --html --xpath '//table/tr[1]/td[1]/text()' -)" == " Supervisor: " ]; then
 	if [ "$(echo $PAGE | xmllint --html --xpath '//table/tr[1]/td[2]/text()' -)" != " Connected " ]; then
-		echo "CRITICAL: supervisor not connected"
+		echo "CRITICAL: Supervisor not connected"
 		exit $STATUS_CRITICAL
 	fi
 else
-	echo "UNKNOWN: unrecognised observer page"
-	exit $STATUS_UNKNOWN
-fi
-
-if [ "$(echo $PAGE | xmllint --html --xpath '//table/tr[2]/td[1]/text()' -)" == " Support: " ]; then
-	if [ "$(echo $PAGE | xmllint --html --xpath '//table/tr[2]/td[2]/text()' -)" != " Supported " ]; then
-		echo "CRITICAL: not supported"
-		exit $STATUS_WARNING
-	fi
-else
-	echo "UNKNOWN: unrecognised observer page"
+	echo "UNKNOWN: Unrecognised observer page"
 	exit $STATUS_UNKNOWN
 fi
 
 if [ "$(echo $PAGE | xmllint --html --xpath '//table/tr[3]/td[1]/text()' -)" == " Health: " ]; then
 	if [ "$(echo $PAGE | xmllint --html --xpath '//table/tr[3]/td[2]/text()' -)" != " Healthy " ]; then
-		echo "CRITICAL: not healthy"
+		echo "CRITICAL: Home Assistant not healthy"
 		exit $STATUS_CRITICAL
 	fi
 else
-	echo "UNKNOWN: unrecognised observer page"
+	echo "UNKNOWN: Unrecognised observer page"
 	exit $STATUS_UNKNOWN
 fi
 
-echo "OK: observer reports Home Assistant up and running"
+if [ "$(echo $PAGE | xmllint --html --xpath '//table/tr[2]/td[1]/text()' -)" == " Support: " ]; then
+	if [ "$(echo $PAGE | xmllint --html --xpath '//table/tr[2]/td[2]/text()' -)" != " Supported " ]; then
+		echo "WARNING: Home Assistant is healthy but not supported"
+		exit $STATUS_WARNING
+	fi
+else
+	echo "UNKNOWN: Unrecognised observer page"
+	exit $STATUS_UNKNOWN
+fi
+
+echo "OK: Observer reports Home Assistant up and running"
 exit $STATUS_OK
