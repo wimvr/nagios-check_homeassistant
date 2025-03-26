@@ -4,7 +4,7 @@
 # Description: Nagios plugin to check Home Assistant via Observer page
 # Website: https://github.com/wimvr/nagios-check_homeassistant
 
-VERSION="0.1"
+VERSION="0.2"
 
 HOST=''
 PORT=4357
@@ -15,7 +15,7 @@ STATUS_WARNING=1
 STATUS_CRITICAL=2
 STATUS_UNKNOWN=3
 
-function usage {
+usage () {
 	echo "Usage:"
 	echo ""
 	echo "	$0 -H <hostname> [-p <port>]"
@@ -33,13 +33,20 @@ function usage {
 	echo "  Print version"
 }
 
+prereq () {
+	if [[ ! -x $(command -v "$1") ]]; then
+		echo "Command '$1' is required"
+		exit $STATUS_UNKNOWN
+	fi
+}
+
 while getopts "H:p:t:hV" args; do
 	case $args in
 		H) HOST=$OPTARG ;;
 		p) PORT=$OPTARG ;;
 		t) TIMEOUT=$OPTARG ;;
 		V)
-			echo "`basename $0` version ${VERSION}"
+			echo "`basename "$0"` version ${VERSION}"
 			exit $STATUS_UNKNOWN
 			;;
 		*)
@@ -69,6 +76,9 @@ if ! [[ $TIMEOUT =~ $re ]]; then
 	exit $STATUS_UNKNOWN
 fi
 
+prereq wget
+prereq xmllint
+
 PAGE=`wget -O - --quiet --timeout=$TIMEOUT http://${HOST}:${PORT}/`
 if [ $? -ne 0 ]; then
 	echo "CRITICAL: No response received while requesting status"
@@ -85,7 +95,7 @@ else
 	exit $STATUS_UNKNOWN
 fi
 
-if [ "`echo $PAGE | xmllint --html --xpath '//table/tr[2]/td[1]/text()' -`" == " Supported: " ]; then
+if [[ "`echo $PAGE | xmllint --html --xpath '//table/tr[2]/td[1]/text()' -`" =~ Support(ed)?: ]]; then
 	if [ "`echo $PAGE | xmllint --html --xpath '//table/tr[2]/td[2]/text()' -`" != " Supported " ]; then
 		echo "CRITICAL: not supported"
 		exit $STATUS_CRITICAL
@@ -95,7 +105,7 @@ else
 	exit $STATUS_UNKNOWN
 fi
 
-if [ "`echo $PAGE | xmllint --html --xpath '//table/tr[3]/td[1]/text()' -`" == " Healthy: " ]; then
+if [[ "`echo $PAGE | xmllint --html --xpath '//table/tr[3]/td[1]/text()' -`" =~ Healthy?: ]]; then
 	if [ "`echo $PAGE | xmllint --html --xpath '//table/tr[3]/td[2]/text()' -`" != " Healthy " ]; then
 		echo "CRITICAL: not healthy"
 		exit $STATUS_CRITICAL
